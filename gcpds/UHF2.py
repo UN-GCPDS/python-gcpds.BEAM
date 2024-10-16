@@ -86,7 +86,7 @@ class VHF1():
         """
 
         bits = []
-        for symbol in self.frequencies:
+        for symbol in self.frequencies: #---------Self.frequencies or data?-----------#
             distances = np.abs(self.constellation - symbol)
             index = np.argmin(distances)
             bits_str = np.binary_repr(index, width=self.bits_per_symbol)
