@@ -7,9 +7,9 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name="gcpds-docs",
+    name="gcpds",
     version='0.1',
-    packages=["gcpds-docs"],
+    packages=["gcpds"],
     author="Daniel Aníbal Loaiza Garzón",
     author_email="daloaizag@unal.edu.co",
     maintainer="Daniel Aníbal Loaiza Garzón",
