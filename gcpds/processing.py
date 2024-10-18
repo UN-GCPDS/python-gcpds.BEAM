@@ -95,7 +95,7 @@ class Processing:
         return fft
 
     # ----------------------------------------------------------------------
-    def welch(self, signal: np.ndarray, fs: float = 20e6) -> np.ndarray:
+    def welch(self, signal: np.ndarray, nper: int = 1024, fs: float = 20e6) -> np.ndarray:
         """
         Estimate the power spectral density of the given signal using Welch's method.
 
@@ -105,6 +105,8 @@ class Processing:
             An array representing the signal to be analyzed where
             the real part is the in-phase component (I) and the imaginary part
             is the quadrature component (Q).
+        nper : int
+            Length of each segment.
         fs : float, optional
             The sampling frequency of the signal. Default is 20M.
 
@@ -145,7 +147,7 @@ class Processing:
             raise ValueError("Input signal must be un numpy array")
 
         # window=('kaiser', 20)
-        f, Pxx = welch(signal, fs=20e6, nperseg=1024, window=np.hanning(1024), noverlap=0)
+        f, Pxx = welch(signal, fs=20e6, nperseg=nper, window=np.hanning(1024), noverlap=0)
 
         f = np.fft.fftshift(f)
         Pxx = np.fft.fftshift(Pxx)
