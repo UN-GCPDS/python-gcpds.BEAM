@@ -4,7 +4,7 @@ from detection import Detection
 from processing import Processing
 
 class VHF1():
-    def __init__(self, sample_rate: int = 8e6, bits_per_symbol: int = 6):
+    def __init__(self, sample_rate: int = 20e6, bits_per_symbol: int = 6):
         """
         Initialize the VHF1 object with the given parameters and create additional objects for further analysis.
 
@@ -20,7 +20,7 @@ class VHF1():
         self.detec = Detection()
         self.pros = Processing()
         self.sample_rate = sample_rate
-        self.frequencies = self.detec.broadcasters('Manizales')
+        self.frequencies = self.detec.broadcasters('Manizales') #-----Se debe cambiar-----#
 
         self.bits_per_symbol = bits_per_symbol
         self.M = 2 ** bits_per_symbol

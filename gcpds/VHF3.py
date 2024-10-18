@@ -1,13 +1,12 @@
 import numpy as np
 import time
-import matplotlib.pyplot as plt
 from detection import Detection
 from processing import Processing
 
-class VHF2():
-    def __init__(self, sample_rate: int = 10e6): # Definir el sample rate
+class VHF3():
+    def __init__(self, sample_rate: int = 20):
         """
-        Initialize the VHF2 object with the given parameters and create additional objects for further analysis.
+        Initialize the VHF3 object with the given parameters and create additional objects for further analysis.
 
         Parameters:
         sample_rate (int): The sample rate used for signal analysis, in Hz. The default value is 20 MHz.
@@ -16,25 +15,30 @@ class VHF2():
         detec (Detection): Instance of the Detection class for frequency detection.
         pros (Processing): Instance of the Processing class for signal processing.
         sample_rate (int): The sample rate for analysis.
-        frequencies (list): List of broadcasters' frequencies obtained for the 'Manizales' region.
+        frequencies (list): List of channels frequencies in range 148MHz to 174MHz.
+        bandwidth (list): List of the bandwidth of each channel.
         """
         self.detec = Detection()
         self.pros = Processing()
         self.sample_rate = sample_rate
+        self.frequencies, self.bandwidth = np.load()
 
-    def parameter(self, data: np.ndarray, fc: float = 161e6) -> dict: # Definir cual debe ser la frecuencia central
-        """Calculate parameters in commercial FM range
+    def parameter(self, data: np.ndarray, nper: int = 32768, fc: float = 140.5e6, gps: np.ndarray = None) -> dict:
+        """Calculate parameters in Fixed and Movil service (148MHz to 174MHz)
         
-        This method is for calculating the power and signal-to-noise ratio (SNR) in 
-        recorded and detected emissions in the range of 88 to 108 MHz
+        This method is for calculating the power corresponding to each channel in the 
+        given range.
 
         Parameters
         ----------
         data : np.ndarray
             Vector of complex numbers representing the I/Q signal captured by the HackRF device.
+        nper : int
+            Length of each segment.
         fc : int
             Central frequency at which the data was acquired.
-
+        gps : np.ndarray
+            
         Returns
         -------
         Dict
@@ -42,6 +46,7 @@ class VHF2():
             - 'time': float : Time at which the trace was captured.
             - 'freq': float : Central frequency of registered or detected emission.
             - 'power': float : Emission power.
+            - 'power_max': float : Maximum emission power.
             - 'snr': float : Signal-to-noise ratio (SNR)
         """
         
@@ -49,46 +54,30 @@ class VHF2():
             'time': [],
             'freq': [],
             'power': [],
+            'power_max': [],
             'snr': []
         }
 
         t0 = time.strftime('%X')
 
-        f, Pxx = self.pros.welch(data, self.sample_rate)
+        f, Pxx = self.pros.welch(data, nper=nper, fs=self.sample_rate)
         f = (f + fc) / 1e6
 
-        peak_powers, peak_freqs, threshold = self.detec.power_based_detection(f, Pxx)
-
-        for center_freq in peak_freqs:
+        for center_freq in self.frequencies:
             index = np.where(np.isclose(f, center_freq, atol=0.01))[0][0]
 
-            lower_index_12 = np.argmin(np.abs(f - (f[index] - 0.00625)))
-            upper_index_12 = np.argmin(np.abs(f - (f[index] + 0.00625)))
+            lower_index = np.argmin(np.abs(f - (f[index] - self.bandwidth[center_freq]/2)))
+            upper_index = np.argmin(np.abs(f - (f[index] + self.bandwidth[center_freq]/2)))
 
-            freq_range_12 = f[lower_index_12:upper_index_12 + 1]
-            Pxx_range_12 = Pxx[lower_index_12:upper_index_12 + 1]
+            Pxx_range = Pxx[lower_index:upper_index + 1] 
 
-            lower_index_25 = np.argmin(np.abs(f - (f[index] - 0.0125)))
-            upper_index_25 = np.argmin(np.abs(f - (f[index] + 0.0125)))
-
-            freq_range_25 = f[lower_index_25:upper_index_25 + 1]
-            Pxx_range_25 = Pxx[lower_index_25:upper_index_25 + 1] 
-
-            # plt.semilogy(freq_range, Pxx_range) 
-
-            power_12 = np.trapz(10 * np.log10(Pxx_range_12), freq_range_12)
-            power_25 = np.trapz(10 * np.log10(Pxx_range_25), freq_range_25)
-
-            if power_25 - power_12 > 3:
-                power = power_25
-            else:
-                power = power_12
+            power = np.mean(10 * np.log10(Pxx_range))
+            power_max = Pxx[index]
 
             parameters['time'].append(t0)
             parameters['freq'].append(center_freq)
             parameters['snr'].append(10 * np.log10(power / Pxx[0]))
             parameters['power'].append(10 * np.log10(power))
-
-        # plt.show()
+            parameters['power_max'].append(10 * np.log10(power_max))
 
         return f, Pxx, parameters
